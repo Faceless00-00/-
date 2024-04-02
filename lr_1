@@ -1,0 +1,205 @@
+CREATE DATABASE laba_1_suvorov;
+USE laba_1_suvorov;
+
+CREATE TABLE Branch (
+    branch_id INT PRIMARY KEY,
+    branch_name VARCHAR(100),
+    location VARCHAR(100)
+);
+
+CREATE TABLE Course (
+    course_id INT PRIMARY KEY,
+    course_name VARCHAR(100),
+    branch_id INT,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id)
+);
+
+CREATE TABLE Employee (
+    employee_id INT PRIMARY KEY,
+    employee_name VARCHAR(100),
+    position VARCHAR(100),
+    branch_id INT,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id)
+);
+
+CREATE TABLE Teacher (
+    teacher_id INT PRIMARY KEY,
+    teacher_name VARCHAR(100),
+    specialization VARCHAR(100),
+    branch_id INT,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id)
+);
+
+CREATE TABLE Student (
+    student_id INT PRIMARY KEY,
+    student_name VARCHAR(100),
+    branch_id INT,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id)
+);
+
+CREATE TABLE Schedule (
+    schedule_id INT PRIMARY KEY,
+    course_id INT,
+    teacher_id INT,
+    day_of_week VARCHAR(10),
+    time_start TIME,
+    time_end TIME,
+    FOREIGN KEY (course_id) REFERENCES Course(course_id),
+    FOREIGN KEY (teacher_id) REFERENCES Teacher(teacher_id)
+);
+
+CREATE TABLE Discipline (
+    discipline_id INT PRIMARY KEY,
+    discipline_name VARCHAR(100)
+);
+
+CREATE TABLE Classroom (
+    classroom_id INT PRIMARY KEY,
+    room_number VARCHAR(10),
+    branch_id INT,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id)
+);
+
+CREATE TABLE ElectronicJournal (
+    journal_id INT PRIMARY KEY,
+    course_id INT,
+    student_id INT,
+    discipline_id INT,
+    teacher_id INT,
+    grade INT,
+    FOREIGN KEY (course_id) REFERENCES Course(course_id),
+    FOREIGN KEY (student_id) REFERENCES Student(student_id),
+    FOREIGN KEY (discipline_id) REFERENCES Discipline(discipline_id),
+    FOREIGN KEY (teacher_id) REFERENCES Teacher(teacher_id)
+);
+
+CREATE TABLE Department (
+    department_id INT PRIMARY KEY,
+    department_name VARCHAR(100),
+    branch_id INT,
+    head_employee_id INT,
+    FOREIGN KEY (branch_id) REFERENCES Branch(branch_id),
+    FOREIGN KEY (head_employee_id) REFERENCES Employee(employee_id)
+);
+
+
+-- Заполнение таблицы "Branch" (Филиал)
+INSERT INTO Branch (branch_id, branch_name, location) VALUES
+(1, 'Main Branch', 'City A'),
+(2, 'Branch 2', 'City B'),
+(3, 'Branch 3', 'City C');
+
+-- Заполнение таблицы "Course" (Курс)
+INSERT INTO Course (course_id, course_name, branch_id) VALUES
+(101, 'Web Development', 1),
+(102, 'Data Science', 1),
+(103, 'Mobile App Development', 2);
+
+-- Заполнение таблицы "Employee" (Сотрудник)
+INSERT INTO Employee (employee_id, employee_name, position, branch_id) VALUES
+(201, 'John Doe', 'Manager', 1),
+(202, 'Jane Smith', 'Instructor', 1),
+(203, 'Bob Johnson', 'Instructor', 2);
+
+-- Заполнение таблицы "Teacher" (Преподаватель)
+INSERT INTO Teacher (teacher_id, teacher_name, specialization, branch_id) VALUES
+(301, 'Alice Brown', 'Web Development', 1),
+(302, 'Michael Green', 'Data Science', 1),
+(303, 'Sarah White', 'Mobile App Development', 2);
+
+-- Заполнение таблицы "Student" (Студент)
+INSERT INTO Student (student_id, student_name, branch_id) VALUES
+(401, 'Emily Davis', 1),
+(402, 'James Wilson', 1),
+(403, 'Emma Martinez', 2);
+
+-- Заполнение таблицы "Schedule" (Расписание)
+INSERT INTO Schedule (schedule_id, course_id, teacher_id, day_of_week, time_start, time_end) VALUES
+(501, 101, 301, 'Monday', '09:00:00', '11:00:00'),
+(502, 102, 302, 'Wednesday', '13:00:00', '15:00:00'),
+(503, 103, 303, 'Friday', '10:00:00', '12:00:00');
+
+-- Заполнение таблицы "Discipline" (Дисциплина)
+INSERT INTO Discipline (discipline_id, discipline_name) VALUES
+(601, 'HTML/CSS'),
+(602, 'Python Programming'),
+(603, 'Android Development');
+
+-- Заполнение таблицы "Classroom" (Кабинет)
+INSERT INTO Classroom (classroom_id, room_number, branch_id) VALUES
+(701, 'Room 101', 1),
+(702, 'Room 102', 1),
+(703, 'Room 103', 2);
+
+-- Заполнение таблицы "ElectronicJournal" (Электронный журнал)
+INSERT INTO ElectronicJournal (journal_id, course_id, student_id, discipline_id, teacher_id, grade) VALUES
+(801, 101, 401, 601, 301, 85),
+(802, 102, 402, 602, 302, 90),
+(803, 103, 403, 603, 303, 88);
+
+-- Заполнение таблицы "Department" (Отдел)
+INSERT INTO Department (department_id, department_name, branch_id, head_employee_id) VALUES
+(901, 'Academic Affairs', 1, 201),
+(902, 'Administration', 1, 201),
+(903, 'Student Services', 2, 202);
+
+-- Функция выполняет проверку наличия сотрудника в базе данных по его имени и должности:
+-- Оптимизирует работу с данными сотрудников
+DELIMITER $$
+CREATE FUNCTION CheckEmployeeExistence(
+    p_employee_name VARCHAR(100),
+    p_position VARCHAR(100)
+)
+RETURNS BOOLEAN
+BEGIN
+    DECLARE employee_exists BOOLEAN;
+    SELECT EXISTS(
+        SELECT 1
+        FROM Employee
+        WHERE employee_name = p_employee_name AND position = p_position
+    ) INTO employee_exists;
+    RETURN employee_exists;
+END$$
+DELIMITER ;
+
+-- Функция для вычисления средней оценки студента по всем предметам:
+-- Позволяет в автоматическом режиме учитывать успеваемость студента, облегчая работу преподавателя
+DELIMITER $$
+CREATE FUNCTION CalculateAverageGrade(
+    p_student_id INT
+)
+RETURNS DECIMAL(5,2)
+BEGIN
+    RETURN (
+        SELECT AVG(grade)
+        FROM ElectronicJournal
+        WHERE student_id = p_student_id
+    );
+END$$
+DELIMITER ;
+
+-- Функцию для получения списка студентов, зарегистрированных на определенный курс:
+-- Функция позволит оптимизировать учет студентов, с которыми придётся работать преподавателю
+
+DELIMITER $$
+CREATE PROCEDURE GetStudentsByCourse(
+    IN p_course_name VARCHAR(100)
+)
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS TempStudentsByCourse (
+        student_id INT,
+        student_name VARCHAR(100),
+        branch_id INT
+    );
+
+    INSERT INTO TempStudentsByCourse (student_id, student_name, branch_id)
+    SELECT Student.student_id, Student.student_name, Student.branch_id
+    FROM Student
+    INNER JOIN Course ON Student.branch_id = Course.branch_id
+    WHERE Course.course_name = p_course_name;
+
+    SELECT * FROM TempStudentsByCourse;
+
+    DROP TEMPORARY TABLE IF EXISTS TempStudentsByCourse;
+END$$
+DELIMITER ;
